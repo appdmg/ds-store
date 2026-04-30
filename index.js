@@ -1,9 +1,11 @@
-var assert = require('assert')
-var alias = require('macos-alias')
-var util = require('util')
+'use strict'
 
-var Entry = require('./lib/entry')
-var DSStore = require('./lib/ds-store')
+const assert = require('node:assert')
+const util = require('node:util')
+const alias = require('@appdmg/macos-alias')
+
+const Entry = require('./lib/entry')
+const DSStore = require('./lib/ds-store')
 
 function Helper () {
   this.file = new DSStore()
@@ -12,8 +14,9 @@ function Helper () {
   }
 }
 
-Helper.prototype.setBackgroundPath = function (path) {
+Helper.prototype.setBackgroundPath = function (path, options) {
   this.opts.backgroundPath = path
+  this.opts.backgroundAliasOptions = options
 }
 
 Helper.prototype.setBackgroundColor = function (red, green, blue) {
@@ -44,20 +47,34 @@ Helper.prototype.vSrn = function (value) {
 }
 
 Helper.prototype.write = function (path, cb) {
-  var rawAlias, colorComponents
+  const promise = writeHelper(this, path)
 
-  if (this.opts.backgroundPath) {
-    rawAlias = alias.create(this.opts.backgroundPath)
+  if (typeof cb === 'function') {
+    promise.then(function () {
+      cb(null)
+    }, cb)
+    return
   }
 
-  if (this.opts.backgroundColor) {
-    colorComponents = this.opts.backgroundColor
+  return promise
+}
+
+async function writeHelper (helper, path) {
+  let rawAlias
+  let colorComponents
+
+  if (helper.opts.backgroundPath) {
+    rawAlias = alias.create(helper.opts.backgroundPath, helper.opts.backgroundAliasOptions || {})
   }
 
-  this.file.push(Entry.construct('.', 'bwsp', this.opts.window))
-  this.file.push(Entry.construct('.', 'icvp', { iconSize: this.opts.iconSize, rawAlias: rawAlias, colorComponents: colorComponents }))
+  if (helper.opts.backgroundColor) {
+    colorComponents = helper.opts.backgroundColor
+  }
 
-  this.file.write(path, cb)
+  helper.file.push(Entry.construct('.', 'bwsp', helper.opts.window))
+  helper.file.push(Entry.construct('.', 'icvp', { iconSize: helper.opts.iconSize, rawAlias: rawAlias, colorComponents: colorComponents }))
+
+  await helper.file.write(path)
 }
 
 /* Backwards compatibility */

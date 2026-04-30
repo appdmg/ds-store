@@ -1,6 +1,10 @@
-# node-ds-store
+# @appdmg/ds-store
 
-.DS_Store manipulation and creation from node.js
+`.DS_Store` creation for appdmg packages.
+
+This package is a CommonJS Node.js 24+ modernization of the original
+`ds-store` package used by `node-appdmg`. It keeps the appdmg-facing API while
+moving the maintained package under the `@appdmg` npm scope.
 
 ## Status
 
@@ -11,15 +15,30 @@ limitations and also only allows creating new files from scratch.
 ## Installation
 
 ```sh
-npm install ds-store
+npm install @appdmg/ds-store
 ```
 
 ## Usage
 
-```javscript
-var DSStore = require('ds-store');
+```javascript
+const DSStore = require('@appdmg/ds-store')
 
-var file = new DSStore();
+async function main () {
+  const file = new DSStore()
+
+  file.setWindowPos(100, 100)
+  file.setWindowSize(640, 480)
+  file.setIconSize(128)
+  file.setIconPos('Example.app', 140, 120)
+  file.setIconPos('Applications', 420, 120)
+
+  await file.write('/Volumes/Example/.DS_Store')
+}
+
+main().catch((err) => {
+  console.error(err)
+  process.exitCode = 1
+})
 ```
 
 ## API
@@ -27,6 +46,10 @@ var file = new DSStore();
 ### file.setBackgroundPath(path)
 
 Set the background image to file specified by `path`.
+
+On non-Darwin platforms, pass `{ volumeName: 'Volume Name' }` as the second
+argument when using background image aliases. The native macOS volume lookup is
+not available there.
 
 ### file.setBackgroundColor(red, green, blue)
 
@@ -59,6 +82,12 @@ Effect currently unknown.
 Write the `.DS_Store` information to file at `path`.
 
 `cb` will get called with `err` upon file creation.
+
+### await file.write(path)
+
+Promise-based equivalent of `file.write(path, cb)`.
+
+The callback form remains supported for existing appdmg callers.
 
 ## Future
 
