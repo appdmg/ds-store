@@ -1,0 +1,38 @@
+name: build
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: build node v24 ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-15-intel
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm audit --audit-level=moderate
+      - run: npm ls --omit=dev --all
+      - run: npm pack --dry-run
+      - run: node --check index.js
+      - run: node --check lib/buddy-allocator.js
+      - run: node --check lib/ds-store.js
+      - run: node --check lib/entry.js
+      - run: node --check lib/partition.js
+      - run: node --check test/ds-store.js
+      - run: node --check test/entry.js
